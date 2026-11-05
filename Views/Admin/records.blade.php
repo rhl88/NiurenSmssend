@@ -56,7 +56,7 @@
                     <div class="layui-inline">
                         <label class="layui-form-label">关键字</label>
                         <div class="layui-input-inline">
-                            <input type="text" name="keyword" placeholder="手机号 / 模板名称 / 模板 CODE" class="layui-input" autocomplete="off">
+                            <input type="text" name="keyword" placeholder="手机号 / 模板名称 / 模板 CODE / 调用来源" class="layui-input" autocomplete="off">
                         </div>
                     </div>
                     <div class="layui-inline">
@@ -147,6 +147,7 @@ layui.use(['jquery', 'table', 'form', 'layer', 'laydate'], function () {
         { field: 'mobile', title: '手机号', width: 140 },
         { field: 'template_name', title: '模板名称', minWidth: 150 },
         { field: 'template_code', title: '模板 CODE', width: 160 },
+        { field: 'caller_app', title: '调用来源', width: 120, templet: function (d) { return d.caller_app ? escapeHtml(d.caller_app) : '<span class="layui-badge layui-bg-gray">后台</span>'; } },
         { field: 'provider_text', title: '服务商', width: 100, align: 'center', templet: '#providerTpl' },
         { field: 'content', title: '短信内容', minWidth: 240, templet: '#contentTpl' },
         { field: 'send_status', title: '发送状态', width: 100, align: 'center', templet: '#statusTpl' },
@@ -241,6 +242,7 @@ layui.use(['jquery', 'table', 'form', 'layer', 'laydate'], function () {
         html += row('发送状态', statusHtml);
         html += row('服务商回执', d.vendor_msg_id ? escapeHtml(d.vendor_msg_id) : '<span style="color:#ccc;">-</span>');
         html += row('业务 ID', d.biz_id ? escapeHtml(d.biz_id) : '<span style="color:#ccc;">-</span>');
+        html += row('调用来源', d.caller_app ? escapeHtml(d.caller_app) : '后台手动发送');
         html += row('操作人', d.operator_name ? escapeHtml(d.operator_name) : '<span style="color:#ccc;">-</span>');
         html += row('发送时间', escapeHtml(d.create_time || ''));
         html += row('更新时间', escapeHtml(d.update_time || ''));
