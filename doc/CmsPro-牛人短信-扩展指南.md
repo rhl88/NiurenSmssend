@@ -60,9 +60,10 @@ niuren_smssend_forget_config_cache(['aliyun_access_key_id']);
 
 | 方法 | 签名 | 说明 |
 |------|------|------|
-| 分页 | `paginate(?string $keyword, ?string $provider, int $pageSize = 15): LengthAwarePaginator` | 按关键字（名称 / CODE）与服务商筛选，`id` 倒序 |
-| 下拉 | `options(?string $provider = null): array` | 启用状态模板的精简列表，元素含 `id/name/code/provider` |
+| 分页 | `paginate(?string $keyword, ?string $provider, int $pageSize = 15): LengthAwarePaginator` | 按关键字（名称 / CODE / 模板标识）与服务商筛选，`id` 倒序 |
+| 下拉 | `options(?string $provider = null): array` | 启用状态模板的精简列表，元素含 `id/name/code/alias/provider` |
 | 查询 | `find(int $id): SmsTemplate` | 返回模板（含字段）；不存在抛 `SmsException` |
+| 按标识查询 | `findByAlias(string $alias): SmsTemplate` | 按应用级模板标识查询模板；不存在抛 `SmsException`，停用不在此拦截 |
 | 表单回显 | `form(int $id): array` | 模板编辑数据（含 `variables` 与 `fields` 表单结构） |
 | 创建 | `create(array $data, array $fields): SmsTemplate` | 事务内创建模板与字段 |
 | 更新 | `update(int $id, array $data, array $fields): SmsTemplate` | 事务内更新模板并整体重建字段 |
@@ -74,9 +75,10 @@ niuren_smssend_forget_config_cache(['aliyun_access_key_id']);
 
 | 方法 | 签名 | 说明 |
 |------|------|------|
-| 发送 | `send(int $templateId, string $mobile, array $fieldValues, array $operator = []): array` | 返回发送后记录详情数组；校验失败或服务商发送失败抛 `SmsException`（此时记录已落 `failed`） |
+| 发送 | `send(int $templateId, string $mobile, array $fieldValues, array $operator = [], string $callerApp = ''): array` | 返回发送后记录详情数组；`$callerApp`（调用方应用标识）落库到记录 `caller_app`，空串表示后台手动发送；校验失败或服务商发送失败抛 `SmsException`（此时记录已落 `failed`） |
+| 按标识发送 | `sendByAlias(string $alias, string $mobile, array $fieldValues, array $operator = [], string $callerApp = ''): array` | 按应用级模板标识查找模板后走 `send()` 主流程；模板不存在抛 `SmsException`，停用校验由 `send()` 统一处理 |
 
-`$fieldValues` 的键为**字段 ID**（多选控件传数组）；`$operator` 可传 `['id' => ..., 'name' => ...]`。
+`$fieldValues` 的键为**字段 ID**（多选控件传数组）；`$operator` 可传 `['id' => ..., 'name' => ...]`；`$callerApp` 为调用方应用标识，由调用方主动传入，落库到发送记录 `caller_app`（空串表示后台手动发送），便于排查外部调用问题。
 
 发送流程：读取模板 → 状态校验 → 手机号校验 → 变量值组装 → 内容渲染 → 写入 `pending` 记录 → 调用服务商 → 更新记录为 `success`（失败则 `failed`）。
 
@@ -92,10 +94,10 @@ niuren_smssend_forget_config_cache(['aliyun_access_key_id']);
 ```php
 use App\Apps\NiurenSmssend\Services\SendService;
 
-$result = app(SendService::class)->send($templateId, '13800138000', $fieldValues, [
+$result = app(SendService::class)->sendByAlias('user.register.verify', '13800138000', $fieldValues, [
     'id'   => auth('admin')->id(),
     'name' => auth('admin')->user()->name ?? '',
-]);
+], 'niuren.form'); // 第 5 参：调用方应用标识，落库到发送记录便于排查
 ```
 
 ---
@@ -184,7 +186,8 @@ class XxcloudProvider implements SmsProviderInterface
 - 在 `Models/SmsTemplate.php` 的 `providerMap()` 中加入 `'xxcloud' => '××云'`；
 - 在 `manifest.json` 中新增该服务商的 `config_groups`，并在 `Config/smssend.php` 补默认值；
 - 在 `Controllers/Admin/SettingController.php` 的 `ALLOWED_KEYS` 中加入配置键，若含敏感字段则加入 `SECRET_KEYS`；
-- 在 `helpers.php` 中 `niuren_smssend_current_provider()` 的合法值列表中加入 `xxcloud`。
+- 在 `helpers.php` 中 `niuren_smssend_current_provider()` 的合法值列表中加入 `xxcloud`；
+- 涉及模板标识时注意：模板标识（alias）为**全局唯一**（跨服务商），与「同服务商下模板 CODE 唯一」相互独立，由 `TemplateService::assertAliasUnique()` 校验，冲突抛「模板标识已被使用」。
 
 **第 4 步：同步界面与测试**
 
@@ -221,4 +224,5 @@ class XxcloudProvider implements SmsProviderInterface
 3. **时间格式**：统一使用 `Y-m-d H:i:s`，模型层通过 `$casts` 与 `serializeDate` 保证输出格式。
 4. **变量拼接**：同一变量的多控件按 `sort` 顺序无分隔符拼接，多选控件内部以「、」连接；调整拼接规则时须同步修改 `SendService::buildParams()` 与发送页预览逻辑。
 5. **敏感信息**：扩展中不得硬编码密钥，一律通过 `niuren_smssend_config()` 读取配置。
-6. **回归验证**：改动服务层或适配层后，务必执行 `php artisan test app/Apps/NiurenSmssend/Tests` 确认既有用例全部通过。
+6. **标识唯一性**：模板 CODE 同服务商唯一，模板标识（alias）全局唯一（跨服务商），两者相互独立；模板保存的唯一性校验统一由 `TemplateService` 处理。
+7. **回归验证**：改动服务层或适配层后，务必执行 `php artisan test app/Apps/NiurenSmssend/Tests` 确认既有用例全部通过。
