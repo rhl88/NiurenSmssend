@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" role="img" aria-labelledby="iconTitle">
+  <title id="iconTitle">牛人短信 · 短信发送管理</title>
+  <defs>
+    <!-- 底板渐变：蓝 → 紫，呼应“云服务”气质 -->
+    <linearGradient id="bgGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2E6BFF"/>
+      <stop offset="1" stop-color="#7B4DFF"/>
+    </linearGradient>
+    <!-- 发送图标渐变 -->
+    <linearGradient id="planeGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2E6BFF"/>
+      <stop offset="1" stop-color="#7B4DFF"/>
+    </linearGradient>
+    <!-- 左上角柔和高光 -->
+    <radialGradient id="gloss" cx="0.28" cy="0.2" r="0.78">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <!-- 气泡投影 -->
+    <filter id="bubbleShadow" x="-25%" y="-25%" width="150%" height="170%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0B1B4A" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- 圆角底板 -->
+  <rect x="0" y="0" width="120" height="120" rx="28" fill="url(#bgGradient)"/>
+  <rect x="0" y="0" width="120" height="120" rx="28" fill="url(#gloss)"/>
+
+  <!-- 消息气泡（含左下尾巴） -->
+  <g filter="url(#bubbleShadow)">
+    <path d="M32 86 H50 L30 100 Z" fill="#ffffff"/>
+    <rect x="16" y="24" width="88" height="62" rx="18" fill="#ffffff"/>
+  </g>
+
+  <!-- 模板内容：三行短信文本（由深到浅，暗示表单字段搭配） -->
+  <rect x="29" y="40" width="56" height="8" rx="4" fill="#2E6BFF" opacity="0.92"/>
+  <rect x="29" y="56" width="34" height="8" rx="4" fill="#2E6BFF" opacity="0.55"/>
+  <rect x="29" y="72" width="34" height="8" rx="4" fill="#2E6BFF" opacity="0.28"/>
+
+  <!-- 发送图标：纸飞机 -->
+  <path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z" fill="url(#planeGradient)" transform="translate(64 50) scale(1.25)"/>
+</svg>

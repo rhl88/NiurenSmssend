@@ -1,0 +1,240 @@
+{
+    "id": "niuren.smssend",
+    "name": "短信发送",
+    "description": "对接阿里云/腾讯云/火山引擎短信 API 的短信发送管理系统：服务商配置、短信模板与表单字段搭配、模板化发送、发送记录追踪",
+    "version": "1.0.3",
+    "icon": "layui-icon layui-icon-notice",
+    "author": "Niuren",
+    "author_url": "https://www.cmspro.cn/apps/niuren.smssend",
+    "require": {
+        "php": ">=8.3",
+        "cmspro": ">=5.0.0"
+    },
+    "providers": [
+        "ServiceProvider"
+    ],
+    "hooks": "Hooks",
+    "install": "Install",
+    "menus": [
+        {
+            "code": "niuren_smssend",
+            "title": "短信发送",
+            "icon": "layui-icon layui-icon-notice",
+            "order": 62,
+            "children": [
+                {
+                    "code": "niuren_smssend_send",
+                    "title": "发送短信",
+                    "icon": "fa fa-paper-plane",
+                    "path": "/admin/niuren/smssend/send",
+                    "order": 1
+                },
+                {
+                    "code": "niuren_smssend_template",
+                    "title": "短信模板",
+                    "icon": "fa fa-file-text-o",
+                    "path": "/admin/niuren/smssend/templates",
+                    "order": 2
+                },
+                {
+                    "code": "niuren_smssend_record",
+                    "title": "发送记录",
+                    "icon": "fa fa-list-alt",
+                    "path": "/admin/niuren/smssend/records",
+                    "order": 3
+                },
+                {
+                    "code": "niuren_smssend_setting",
+                    "title": "短信设置",
+                    "icon": "fa fa-cog",
+                    "path": "/admin/niuren/smssend/settings",
+                    "order": 4
+                }
+            ]
+        }
+    ],
+    "config_groups": [
+        {
+            "name": "smssend_settings",
+            "title": "短信发送设置",
+            "items": [
+                {
+                    "name": "current_provider",
+                    "title": "当前启用服务商",
+                    "type": "text",
+                    "value": "aliyun",
+                    "tips": "当前生效的短信服务商：aliyun-阿里云 tencent-腾讯云 volcano-火山引擎。发送短信时按此服务商调用对应接口。"
+                },
+                {
+                    "name": "ssl_verify",
+                    "title": "SSL证书验证",
+                    "type": "text",
+                    "value": "1",
+                    "tips": "是否验证短信服务商接口的 SSL 证书：1-开启 0-关闭。发送报 cURL error 60/77 时可先下载 CA 证书再保持开启；关闭验证仅作应急排查用，存在安全风险。"
+                },
+                {
+                    "name": "ssl_ca_path",
+                    "title": "CA证书路径",
+                    "type": "text",
+                    "value": "",
+                    "tips": "应用级 CA 证书文件路径（相对于 storage 目录），如 app/niuren_smssend/certs/cacert.pem。配置且文件存在后，发送请求优先使用该证书，不依赖服务器 php.ini 配置。"
+                }
+            ]
+        },
+        {
+            "name": "aliyun_settings",
+            "title": "阿里云短信配置",
+            "items": [
+                {
+                    "name": "aliyun_access_key_id",
+                    "title": "AccessKey ID",
+                    "type": "text",
+                    "value": "",
+                    "tips": "阿里云账号 AccessKey ID（RAM 用户），用于短信接口鉴权。"
+                },
+                {
+                    "name": "aliyun_access_key_secret",
+                    "title": "AccessKey Secret",
+                    "type": "password",
+                    "value": "",
+                    "tips": "阿里云账号 AccessKey Secret，用于签名计算；明文存储、保存后可回显。"
+                },
+                {
+                    "name": "aliyun_sign_name",
+                    "title": "短信签名",
+                    "type": "text",
+                    "value": "",
+                    "tips": "阿里云短信控制台审核通过的签名名称，如：牛人体检。"
+                },
+                {
+                    "name": "aliyun_region_id",
+                    "title": "地域 RegionId",
+                    "type": "text",
+                    "value": "cn-hangzhou",
+                    "tips": "接口地域，默认 cn-hangzhou。"
+                },
+                {
+                    "name": "aliyun_endpoint",
+                    "title": "接口地址 Endpoint",
+                    "type": "text",
+                    "value": "dysmsapi.aliyuncs.com",
+                    "tips": "短信接口地址，默认 dysmsapi.aliyuncs.com。"
+                }
+            ]
+        },
+        {
+            "name": "tencent_settings",
+            "title": "腾讯云短信配置",
+            "items": [
+                {
+                    "name": "tencent_secret_id",
+                    "title": "SecretId",
+                    "type": "text",
+                    "value": "",
+                    "tips": "腾讯云访问密钥 SecretId，用于短信接口鉴权。"
+                },
+                {
+                    "name": "tencent_secret_key",
+                    "title": "SecretKey",
+                    "type": "password",
+                    "value": "",
+                    "tips": "腾讯云访问密钥 SecretKey，用于 TC3 签名计算；明文存储、保存后可回显。"
+                },
+                {
+                    "name": "tencent_sms_sdk_app_id",
+                    "title": "短信应用 SdkAppId",
+                    "type": "text",
+                    "value": "",
+                    "tips": "腾讯云短信控制台的应用 SdkAppId，如：1400xxxxxx。"
+                },
+                {
+                    "name": "tencent_sign_name",
+                    "title": "短信签名",
+                    "type": "text",
+                    "value": "",
+                    "tips": "腾讯云短信签名内容（注意不含【】符号），需与模板签名一致。"
+                },
+                {
+                    "name": "tencent_region",
+                    "title": "地域 Region",
+                    "type": "text",
+                    "value": "ap-guangzhou",
+                    "tips": "接口地域，默认 ap-guangzhou。"
+                },
+                {
+                    "name": "tencent_endpoint",
+                    "title": "接口地址 Endpoint",
+                    "type": "text",
+                    "value": "sms.tencentcloudapi.com",
+                    "tips": "短信接口地址，默认 sms.tencentcloudapi.com。"
+                }
+            ]
+        },
+        {
+            "name": "volcano_settings",
+            "title": "火山引擎短信配置",
+            "items": [
+                {
+                    "name": "volcano_access_key",
+                    "title": "AccessKey",
+                    "type": "text",
+                    "value": "",
+                    "tips": "火山引擎 AccessKey ID，用于短信接口鉴权。"
+                },
+                {
+                    "name": "volcano_secret_key",
+                    "title": "SecretKey",
+                    "type": "password",
+                    "value": "",
+                    "tips": "火山引擎 Secret Access Key，用于 V4 签名计算；明文存储、保存后可回显。"
+                },
+                {
+                    "name": "volcano_sign_name",
+                    "title": "短信签名",
+                    "type": "text",
+                    "value": "",
+                    "tips": "火山引擎短信控制台审核通过的签名，如：牛人体检。"
+                },
+                {
+                    "name": "volcano_sms_account",
+                    "title": "短信服务账号",
+                    "type": "text",
+                    "value": "",
+                    "tips": "火山引擎短信服务的 SmsAccount（子账号标识），发送接口必填。"
+                },
+                {
+                    "name": "volcano_region",
+                    "title": "地域 Region",
+                    "type": "text",
+                    "value": "cn-north-1",
+                    "tips": "接口地域，默认 cn-north-1。"
+                },
+                {
+                    "name": "volcano_endpoint",
+                    "title": "接口地址 Endpoint",
+                    "type": "text",
+                    "value": "sms.volcengineapi.com",
+                    "tips": "短信接口地址，默认 sms.volcengineapi.com。火山引擎接入为预留能力。"
+                }
+            ]
+        }
+    ],
+    "permissions": [
+        {
+            "code": "niuren.smssend.setting",
+            "name": "短信设置"
+        },
+        {
+            "code": "niuren.smssend.template",
+            "name": "短信模板管理"
+        },
+        {
+            "code": "niuren.smssend.send",
+            "name": "发送短信"
+        },
+        {
+            "code": "niuren.smssend.record",
+            "name": "发送记录"
+        }
+    ]
+}
