@@ -259,6 +259,36 @@ class TemplateServiceTest extends TestCase
         $this->assertSame('order.notify', $updated->alias);
     }
 
+    public function test_更新模板时改成他人已用标识报错(): void
+    {
+        $this->service()->create([
+            'name' => '模板A',
+            'code' => 'SMS_ALIAS_A',
+            'alias' => 'order.notify',
+            'provider' => SmsTemplate::PROVIDER_ALIYUN,
+            'content' => '尊敬的${name}',
+        ], []);
+
+        $templateB = $this->service()->create([
+            'name' => '模板B',
+            'code' => 'SMS_ALIAS_B',
+            'alias' => 'user.register.verify',
+            'provider' => SmsTemplate::PROVIDER_ALIYUN,
+            'content' => '尊敬的${name}',
+        ], []);
+
+        $this->expectException(SmsException::class);
+        $this->expectExceptionMessage('模板标识已被使用');
+
+        $this->service()->update($templateB->id, [
+            'name' => '模板B',
+            'code' => 'SMS_ALIAS_B',
+            'alias' => 'order.notify',
+            'provider' => SmsTemplate::PROVIDER_ALIYUN,
+            'content' => '尊敬的${name}',
+        ], []);
+    }
+
     public function test_按标识查询模板(): void
     {
         $template = $this->service()->create([
