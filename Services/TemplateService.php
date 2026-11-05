@@ -38,7 +38,7 @@ class TemplateService
      * 启用状态的模板精简列表（发送页下拉用）
      *
      * @param string|null $provider 服务商筛选，空则不限
-     * @return array<int,array{id:int,name:string,code:string,provider:string}>
+     * @return array<int,array{id:int,name:string,code:string,alias:string,provider:string}>
      */
     public function options(?string $provider = null): array
     {
@@ -46,11 +46,12 @@ class TemplateService
             ->enabled()
             ->ofProvider($provider)
             ->orderBy('id', 'desc')
-            ->get(['id', 'name', 'code', 'provider'])
+            ->get(['id', 'name', 'code', 'alias', 'provider'])
             ->map(fn (SmsTemplate $template) => [
                 'id' => (int) $template->id,
                 'name' => (string) $template->name,
                 'code' => (string) $template->code,
+                'alias' => (string) ($template->alias ?? ''),
                 'provider' => (string) $template->provider,
             ])
             ->all();
@@ -87,6 +88,7 @@ class TemplateService
             'id' => (int) $template->id,
             'name' => (string) $template->name,
             'code' => (string) $template->code,
+            'alias' => (string) ($template->alias ?? ''),
             'provider' => (string) $template->provider,
             'content' => (string) $template->content,
             'sign_name' => (string) $template->sign_name,
@@ -113,6 +115,9 @@ class TemplateService
         return DB::transaction(function () use ($data, $fields) {
             $payload = $this->normalizeTemplateData($data);
             $this->assertCodeUnique($payload['provider'], $payload['code']);
+            if ($payload['alias'] !== null) {
+                $this->assertAliasUnique($payload['alias']);
+            }
 
             $template = SmsTemplate::create($payload);
             $this->syncFields($template, $fields);
@@ -135,6 +140,9 @@ class TemplateService
             $template = $this->find($id);
             $payload = $this->normalizeTemplateData($data);
             $this->assertCodeUnique($payload['provider'], $payload['code'], (int) $template->id);
+            if ($payload['alias'] !== null) {
+                $this->assertAliasUnique($payload['alias'], (int) $template->id);
+            }
 
             $template->update($payload);
             $this->syncFields($template, $fields);
@@ -186,6 +194,11 @@ class TemplateService
             throw new SmsException('请填写模板 CODE');
         }
 
+        $alias = trim((string) ($data['alias'] ?? ''));
+        if ($alias !== '' && ! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{1,99}$/', $alias)) {
+            throw new SmsException('模板标识仅支持字母、数字、点、中划线、下划线，须以字母或数字开头');
+        }
+
         $content = (string) ($data['content'] ?? '');
         if (trim($content) === '') {
             throw new SmsException('请填写模板内容');
@@ -194,6 +207,7 @@ class TemplateService
         return [
             'name' => $name,
             'code' => $code,
+            'alias' => $alias !== '' ? $alias : null,
             'provider' => $provider,
             'content' => $content,
             'sign_name' => trim((string) ($data['sign_name'] ?? '')),
@@ -220,6 +234,42 @@ class TemplateService
         if ($query->exists()) {
             throw new SmsException('该服务商下已存在相同的模板 CODE');
         }
+    }
+
+    /**
+     * 校验模板标识全局唯一（跨服务商）
+     *
+     * @throws SmsException
+     */
+    private function assertAliasUnique(string $alias, ?int $excludeId = null): void
+    {
+        $query = SmsTemplate::query()->where('alias', $alias);
+
+        if ($excludeId !== null) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        if ($query->exists()) {
+            throw new SmsException('模板标识已被使用');
+        }
+    }
+
+    /**
+     * 按应用级模板标识查询模板（供其他应用按标识调用）
+     *
+     * 停用状态不做拦截，统一由 SendService::send() 校验。
+     *
+     * @throws SmsException
+     */
+    public function findByAlias(string $alias): SmsTemplate
+    {
+        $template = SmsTemplate::query()->where('alias', trim($alias))->first();
+
+        if (! $template) {
+            throw new SmsException('短信模板不存在或已被删除');
+        }
+
+        return $template;
     }
 
     /**

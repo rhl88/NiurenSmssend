@@ -188,6 +188,112 @@ class TemplateServiceTest extends TestCase
         $this->service()->find(999999);
     }
 
+    public function test_模板标识留空时保存为NULL(): void
+    {
+        $template = $this->service()->create([
+            'name' => '无标识模板',
+            'code' => 'SMS_NO_ALIAS',
+            'provider' => SmsTemplate::PROVIDER_ALIYUN,
+            'content' => '尊敬的${name}',
+        ], []);
+
+        $this->assertNull($template->refresh()->alias);
+        $this->assertSame('', $template->toSummaryArray()['alias']);
+    }
+
+    public function test_模板标识格式不合法时报错(): void
+    {
+        $this->expectException(SmsException::class);
+        $this->expectExceptionMessage('模板标识仅支持字母、数字、点、中划线、下划线，须以字母或数字开头');
+
+        $this->service()->create([
+            'name' => '非法标识模板',
+            'code' => 'SMS_BAD_ALIAS',
+            'alias' => '中文标识!',  // 非法字符
+            'provider' => SmsTemplate::PROVIDER_ALIYUN,
+            'content' => '尊敬的${name}',
+        ], []);
+    }
+
+    public function test_模板标识全局唯一(): void
+    {
+        $this->service()->create([
+            'name' => '模板一',
+            'code' => 'SMS_ALIAS_1',
+            'alias' => 'user.register.verify',
+            'provider' => SmsTemplate::PROVIDER_ALIYUN,
+            'content' => '尊敬的${name}',
+        ], []);
+
+        $this->expectException(SmsException::class);
+        $this->expectExceptionMessage('模板标识已被使用');
+
+        $this->service()->create([
+            'name' => '模板二',
+            'code' => 'SMS_ALIAS_2',
+            'alias' => 'user.register.verify',  // 与模板一相同（跨服务商也不允许）
+            'provider' => SmsTemplate::PROVIDER_TENCENT,
+            'content' => '尊敬的${name}',
+        ], []);
+    }
+
+    public function test_更新模板时标识排除自身后唯一(): void
+    {
+        $template = $this->service()->create([
+            'name' => '模板一',
+            'code' => 'SMS_ALIAS_3',
+            'alias' => 'order.notify',
+            'provider' => SmsTemplate::PROVIDER_ALIYUN,
+            'content' => '尊敬的${name}',
+        ], []);
+
+        // 自身保留原标识应放行
+        $updated = $this->service()->update($template->id, [
+            'name' => '模板一V2',
+            'code' => 'SMS_ALIAS_3',
+            'alias' => 'order.notify',
+            'provider' => SmsTemplate::PROVIDER_ALIYUN,
+            'content' => '尊敬的${name}，结果${info}',
+        ], []);
+
+        $this->assertSame('order.notify', $updated->alias);
+    }
+
+    public function test_按标识查询模板(): void
+    {
+        $template = $this->service()->create([
+            'name' => '找回密码',
+            'code' => 'SMS_FIND_PWD',
+            'alias' => 'user.reset.password',
+            'provider' => SmsTemplate::PROVIDER_ALIYUN,
+            'content' => '尊敬的${name}',
+        ], []);
+
+        $found = $this->service()->findByAlias('user.reset.password');
+        $this->assertSame((int) $template->id, (int) $found->id);
+
+        $this->expectException(SmsException::class);
+        $this->expectExceptionMessage('短信模板不存在或已被删除');
+        $this->service()->findByAlias('not.exists');
+    }
+
+    public function test_表单回显与下拉选项包含标识(): void
+    {
+        $template = $this->service()->create([
+            'name' => '体检通知',
+            'code' => 'SMS_ALIAS_FORM',
+            'alias' => 'health.notice',
+            'provider' => SmsTemplate::PROVIDER_ALIYUN,
+            'content' => '尊敬的${name}',
+        ], []);
+
+        $this->assertSame('health.notice', $this->service()->form($template->id)['alias']);
+
+        $options = $this->service()->options();
+        $target = array_values(array_filter($options, fn ($o) => $o['id'] === (int) $template->id))[0];
+        $this->assertSame('health.notice', $target['alias']);
+    }
+
     public function test_模板表单回显包含变量与字段结构(): void
     {
         $template = $this->createTemplate(['content' => '尊敬的${name}，结果${info}'], [

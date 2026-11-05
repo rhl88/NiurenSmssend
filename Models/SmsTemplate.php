@@ -54,6 +54,7 @@ class SmsTemplate extends BaseModel
     protected $fillable = [
         'name',
         'code',
+        'alias',
         'provider',
         'content',
         'sign_name',
@@ -171,6 +172,7 @@ class SmsTemplate extends BaseModel
             'id' => (int) $this->id,
             'name' => (string) $this->name,
             'code' => (string) $this->code,
+            'alias' => (string) ($this->alias ?? ''),
             'provider' => (string) $this->provider,
             'provider_text' => self::providerMap()[$this->provider] ?? $this->provider,
             'content' => (string) $this->content,
