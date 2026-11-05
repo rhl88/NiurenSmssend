@@ -58,6 +58,27 @@ class RecordServiceTest extends TestCase
         $this->assertSame('缴费提醒', $byName->items()[0]->template_name);
     }
 
+    public function test_按关键字可搜索到调用方标识(): void
+    {
+        $this->createRecord(['mobile' => '13800138000', 'caller_app' => 'niuren.form']);
+        $this->createRecord(['mobile' => '13900139000', 'caller_app' => '']);
+
+        $result = $this->service()->paginate(null, null, 'niuren.form', null, null);
+
+        $this->assertSame(1, $result->total());
+        $this->assertSame('niuren.form', $result->items()[0]->caller_app);
+        $this->assertSame('niuren.form', $result->items()[0]->toSummaryArray()['caller_app']);
+    }
+
+    public function test_关键字搜索调用方标识不命中后台记录(): void
+    {
+        $this->createRecord(['mobile' => '13800138000', 'caller_app' => '']);
+
+        $result = $this->service()->paginate(null, null, 'niuren', null, null);
+
+        $this->assertSame(0, $result->total());
+    }
+
     public function test_按日期范围筛选记录(): void
     {
         $this->createRecord(['create_time' => '2026-10-01 10:00:00', 'mobile' => '13800000001']);
