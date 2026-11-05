@@ -237,6 +237,7 @@ class TemplateController extends BaseAdminController
         return [
             'name' => 'required|string|max:100',
             'code' => 'required|string|max:100',
+            'alias' => 'nullable|string|max:100',
             'provider' => 'required|string|in:aliyun,tencent,volcano',
             'content' => 'required|string',
             'sign_name' => 'nullable|string|max:100',
@@ -285,6 +286,7 @@ class TemplateController extends BaseAdminController
         return [
             'name' => '模板名称',
             'code' => '模板 CODE',
+            'alias' => '模板标识',
             'provider' => '短信服务商',
             'content' => '模板内容',
             'sign_name' => '短信签名',

@@ -53,7 +53,7 @@
                             <div class="layui-inline">
                                 <label class="layui-form-label">关键字</label>
                                 <div class="layui-input-inline">
-                                    <input type="text" name="keyword" placeholder="模板名称 / 模板 CODE" class="layui-input" autocomplete="off">
+                                    <input type="text" name="keyword" placeholder="模板名称 / 模板 CODE / 模板标识" class="layui-input" autocomplete="off">
                                 </div>
                             </div>
                             <div class="layui-inline">
@@ -127,6 +127,12 @@
             <label class="layui-form-label">模板 CODE</label>
             <div class="layui-input-block">
                 <input type="text" id="tplCode" class="layui-input" placeholder="服务商控制台的模板 CODE，如：SMS_512651836" autocomplete="off">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">模板标识</label>
+            <div class="layui-input-block">
+                <input type="text" id="tplAlias" class="layui-input" placeholder="选填，如 user.register.verify；供其他应用按标识调用，全局唯一" autocomplete="off">
             </div>
         </div>
         <div class="layui-form-item">
@@ -224,6 +230,7 @@ layui.use(['jquery', 'table', 'form', 'layer'], function () {
         { title: ' ', type: 'numbers', width: 42 },
         { field: 'name', title: '模板名称', minWidth: 160, templet: function (d) { return '<span class="tpl-name-cell" title="' + escapeHtml(d.content) + '">' + escapeHtml(d.name) + '<a class="tpl-copy-btn" data-id="' + d.id + '"><i class="fa fa-copy"></i> 复制</a></span>'; } },
         { field: 'code', title: '模板 CODE', width: 170 },
+        { field: 'alias', title: '模板标识', width: 160, templet: function (d) { return d.alias ? escapeHtml(d.alias) : '<span style="color:#ccc;">-</span>'; } },
         { field: 'provider_text', title: '服务商', width: 100, align: 'center', templet: '#providerTpl' },
         { field: 'variables', title: '模板变量', minWidth: 200, templet: '#varsTpl' },
         { field: 'status', title: '状态', width: 80, align: 'center', templet: '#statusTpl' },
@@ -445,6 +452,7 @@ layui.use(['jquery', 'table', 'form', 'layer'], function () {
         editingId = id || 0;
         $('#tplName').val('');
         $('#tplCode').val('');
+        $('#tplAlias').val('');
         $('#tplProvider').val('{{ $defaultProvider }}');
         $('#tplSignName').val('');
         $('#tplContent').val('');
@@ -473,6 +481,7 @@ layui.use(['jquery', 'table', 'form', 'layer'], function () {
                 var d = res.data || {};
                 $('#tplName').val(d.name || '');
                 $('#tplCode').val(d.code || '');
+                $('#tplAlias').val(d.alias || '');
                 $('#tplProvider').val(d.provider || '{{ $defaultProvider }}');
                 $('#tplSignName').val(d.sign_name || '');
                 $('#tplContent').val(d.content || '');
@@ -500,6 +509,7 @@ layui.use(['jquery', 'table', 'form', 'layer'], function () {
         collectDomToModel();
         var name = $.trim($('#tplName').val());
         var code = $.trim($('#tplCode').val());
+        var alias = $.trim($('#tplAlias').val());
         var content = $('#tplContent').val();
         if (!name) { layer.msg('请填写模板名称', { icon: 2 }); return; }
         if (!code) { layer.msg('请填写模板 CODE', { icon: 2 }); return; }
@@ -512,6 +522,7 @@ layui.use(['jquery', 'table', 'form', 'layer'], function () {
         var payload = {
             name: name,
             code: code,
+            alias: alias,
             provider: $('#tplProvider').val(),
             sign_name: $.trim($('#tplSignName').val()),
             content: content,
@@ -571,6 +582,7 @@ layui.use(['jquery', 'table', 'form', 'layer'], function () {
             editingId = 0;
             $('#tplName').val((d.name || '') + '（副本）');
             $('#tplCode').val('');
+            $('#tplAlias').val('');
             $('#tplProvider').val(d.provider || '{{ $defaultProvider }}');
             $('#tplSignName').val(d.sign_name || '');
             $('#tplContent').val(d.content || '');

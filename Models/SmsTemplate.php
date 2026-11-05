@@ -105,7 +105,7 @@ class SmsTemplate extends BaseModel
     }
 
     /**
-     * 作用域：按关键字模糊搜索（模板名称 / 模板 CODE）
+     * 作用域：按关键字模糊搜索（模板名称 / 模板 CODE / 模板标识）
      *
      * @param string|null $keyword 搜索关键词，为空不附加条件
      */
@@ -118,7 +118,8 @@ class SmsTemplate extends BaseModel
 
         return $query->where(function (Builder $sub) use ($keyword) {
             $sub->where('name', 'like', '%' . $keyword . '%')
-                ->orWhere('code', 'like', '%' . $keyword . '%');
+                ->orWhere('code', 'like', '%' . $keyword . '%')
+                ->orWhere('alias', 'like', '%' . $keyword . '%');
         });
     }
 
