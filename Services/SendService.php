@@ -45,11 +45,12 @@ class SendService
      * @param string $mobile    接收手机号
      * @param array<int|string,mixed> $fieldValues 表单值，键为字段 ID
      * @param array{id?:int,name?:string} $operator 操作人信息
+     * @param string $callerApp 调用方应用标识（其他应用调用时传入；后台页面不传，落空串）
      * @return array<string,mixed> 发送后记录详情
      *
      * @throws SmsException 校验失败或服务商发送失败时（记录已写入 failed 状态）
      */
-    public function send(int $templateId, string $mobile, array $fieldValues, array $operator = []): array
+    public function send(int $templateId, string $mobile, array $fieldValues, array $operator = [], string $callerApp = ''): array
     {
         $template = $this->templateService->find($templateId);
 
@@ -73,6 +74,7 @@ class SendService
             'send_status' => SmsRecord::STATUS_PENDING,
             'operator_id' => (int) ($operator['id'] ?? 0),
             'operator_name' => (string) ($operator['name'] ?? ''),
+            'caller_app' => mb_substr(trim($callerApp), 0, 100),
             'status' => 1,
         ]);
 
@@ -107,6 +109,27 @@ class SendService
             $this->markFailed($record, self::UNEXPECTED_FAILURE_MESSAGE);
             throw new SmsException(self::UNEXPECTED_FAILURE_MESSAGE);
         }
+    }
+
+    /**
+     * 按应用级模板标识发送短信（供其他应用按标识调用，不依赖模板 ID）
+     *
+     * 停用校验、手机号与必填校验、落库与异常处理均复用 send() 主流程。
+     *
+     * @param string $alias 应用级模板标识
+     * @param string $mobile 接收手机号
+     * @param array<int|string,mixed> $fieldValues 表单值，键为字段 ID
+     * @param array{id?:int,name?:string} $operator 操作人信息
+     * @param string $callerApp 调用方应用标识
+     * @return array<string,mixed> 发送后记录详情
+     *
+     * @throws SmsException 模板不存在、校验失败或服务商发送失败时
+     */
+    public function sendByAlias(string $alias, string $mobile, array $fieldValues, array $operator = [], string $callerApp = ''): array
+    {
+        $template = $this->templateService->findByAlias($alias);
+
+        return $this->send((int) $template->id, $mobile, $fieldValues, $operator, $callerApp);
     }
 
     // ──────────────────────────────────────────────────────────────

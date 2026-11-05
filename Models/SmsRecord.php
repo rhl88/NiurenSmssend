@@ -65,6 +65,7 @@ class SmsRecord extends BaseModel
         'request_info',
         'operator_id',
         'operator_name',
+        'caller_app',
         'status',
     ];
 
@@ -113,7 +114,7 @@ class SmsRecord extends BaseModel
     }
 
     /**
-     * 作用域：按关键字模糊搜索（手机号 / 模板名称 / 模板 CODE）
+     * 作用域：按关键字模糊搜索（手机号 / 模板名称 / 模板 CODE / 调用方应用标识）
      *
      * @param string|null $keyword 搜索关键词，为空不附加条件
      */
@@ -127,7 +128,8 @@ class SmsRecord extends BaseModel
         return $query->where(function (Builder $sub) use ($keyword) {
             $sub->where('mobile', 'like', '%' . $keyword . '%')
                 ->orWhere('template_name', 'like', '%' . $keyword . '%')
-                ->orWhere('template_code', 'like', '%' . $keyword . '%');
+                ->orWhere('template_code', 'like', '%' . $keyword . '%')
+                ->orWhere('caller_app', 'like', '%' . $keyword . '%');
         });
     }
 
@@ -167,6 +169,7 @@ class SmsRecord extends BaseModel
             'send_status_text' => self::statusMap()[$this->send_status] ?? $this->send_status,
             'error_message' => (string) $this->error_message,
             'operator_name' => (string) $this->operator_name,
+            'caller_app' => (string) ($this->caller_app ?? ''),
             'create_time' => $this->create_time?->format('Y-m-d H:i:s') ?? '',
         ];
     }

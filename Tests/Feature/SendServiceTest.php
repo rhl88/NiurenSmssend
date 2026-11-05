@@ -381,4 +381,84 @@ class SendServiceTest extends TestCase
         $this->assertStringNotContainsString('AccessKeyId', json_encode($info, JSON_UNESCAPED_UNICODE) ?: '');
         $this->assertStringNotContainsString('Signature', json_encode($info, JSON_UNESCAPED_UNICODE) ?: '');
     }
+
+    public function test_按模板标识发送成功(): void
+    {
+        $this->fakeAliyunSuccess();
+
+        $template = $this->createTemplate(['alias' => 'health.notice', 'content' => '尊敬的${name}'], [
+            ['var_name' => 'name', 'label' => '姓名', 'field_type' => 'text'],
+        ]);
+        $field = $template->fields->first();
+
+        $record = $this->service()->sendByAlias('health.notice', '13800138000', [$field->id => '张三'], [], 'niuren.form');
+
+        $this->assertSame('success', $record['send_status']);
+        $this->assertSame('niuren.form', $record['caller_app']);
+    }
+
+    public function test_按不存在的模板标识发送时报错(): void
+    {
+        $this->expectException(SmsException::class);
+        $this->expectExceptionMessage('短信模板不存在或已被删除');
+
+        $this->service()->sendByAlias('not.exists', '13800138000', [], [], 'niuren.form');
+    }
+
+    public function test_标识调用停用模板时由主流程拒绝(): void
+    {
+        $this->createTemplate(['alias' => 'disabled.tpl', 'status' => 0]);
+
+        $this->expectException(SmsException::class);
+        $this->expectExceptionMessage('该短信模板已停用，无法发送');
+
+        $this->service()->sendByAlias('disabled.tpl', '13800138000', [], [], 'niuren.form');
+    }
+
+    public function test_调用方标识随记录落库(): void
+    {
+        $this->fakeAliyunSuccess();
+
+        $template = $this->createTemplate(['alias' => 'checkin.tpl', 'content' => '尊敬的${name}'], [
+            ['var_name' => 'name', 'label' => '姓名', 'field_type' => 'text'],
+        ]);
+        $field = $template->fields->first();
+
+        // 按标识调用并传调用方
+        $this->service()->sendByAlias('checkin.tpl', '13800138000', [$field->id => '张三'], ['id' => 9, 'name' => '外部应用'], 'niuren.checkin');
+
+        $record = SmsRecord::query()->where('mobile', '13800138000')->firstOrFail();
+        $this->assertSame('niuren.checkin', $record->caller_app);
+        $this->assertSame('niuren.checkin', $record->toSummaryArray()['caller_app']);
+    }
+
+    public function test_后台发送不传调用方时记录落空串(): void
+    {
+        $this->fakeAliyunSuccess();
+
+        $template = $this->createTemplate(['content' => '尊敬的${name}'], [
+            ['var_name' => 'name', 'label' => '姓名', 'field_type' => 'text'],
+        ]);
+        $field = $template->fields->first();
+
+        $this->service()->send($template->id, '13800138000', [$field->id => '张三']);
+
+        $record = SmsRecord::query()->where('mobile', '13800138000')->firstOrFail();
+        $this->assertSame('', $record->caller_app);
+    }
+
+    public function test_超长调用方标识落库时截断至字段上限(): void
+    {
+        $this->fakeAliyunSuccess();
+
+        $template = $this->createTemplate(['content' => '尊敬的${name}'], [
+            ['var_name' => 'name', 'label' => '姓名', 'field_type' => 'text'],
+        ]);
+        $field = $template->fields->first();
+
+        $this->service()->send($template->id, '13800138000', [$field->id => '张三'], [], str_repeat('a', 150));
+
+        $record = SmsRecord::query()->where('mobile', '13800138000')->firstOrFail();
+        $this->assertSame(100, mb_strlen($record->caller_app));
+    }
 }
