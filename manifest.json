@@ -2,7 +2,7 @@
     "id": "niuren.smssend",
     "name": "短信发送",
     "description": "对接阿里云/腾讯云/火山引擎短信 API 的短信发送管理系统：服务商配置、短信模板与表单字段搭配、模板化发送、发送记录追踪",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "icon": "layui-icon layui-icon-notice",
     "author": "Niuren",
     "author_url": "https://www.cmspro.cn/apps/niuren.smssend",
