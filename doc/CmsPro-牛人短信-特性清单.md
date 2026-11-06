@@ -1,7 +1,7 @@
 # CmsPro 牛人短信 · 特性清单
 
-> 版本：1.0.3 | 更新日期：2026-10-23
-> 应用版本：1.0.3 | 应用 ID：niuren.smssend
+> 版本：1.0.4 | 更新日期：2026-11-06
+> 应用版本：1.0.4 | 应用 ID：niuren.smssend
 
 本清单罗列「短信发送」应用已交付的全部能力，按「应用体系 / 路由与终端 / 数据层 / 服务商适配 / 业务模块 / 安全与健壮性 / 测试覆盖」七个维度组织，每条特性标注唯一实现位置，便于验收与维护对照。
 
@@ -11,7 +11,7 @@
 
 | # | 特性 | 说明 | 实现位置 |
 |---|------|------|----------|
-| 1 | 应用标识 | 应用 ID `niuren.smssend`，名称「短信发送」，版本 `1.0.3`，作者 Niuren | `app/Apps/NiurenSmssend/manifest.json` |
+| 1 | 应用标识 | 应用 ID `niuren.smssend`，名称「短信发送」，版本 `1.0.4`，作者 Niuren | `app/Apps/NiurenSmssend/manifest.json` |
 | 2 | 应用类映射 | `app_id_to_class_name('niuren.smssend')` → `NiurenSmssend`，命名空间 `App\Apps\NiurenSmssend` | `ServiceProvider.php` |
 | 3 | 元数据单一来源 | 菜单、配置组、权限全部由 `manifest.json` 声明，安装时据此三向同步落库 | `manifest.json` |
 | 4 | 依赖要求 | 运行要求 PHP `>=8.3`、CmsPro `>=5.0.0` | `manifest.json` |
@@ -136,14 +136,14 @@
 
 ## 七、测试覆盖
 
-应用测试位于 `app/Apps/NiurenSmssend/Tests/`，使用 SQLite 内存库并假配置 / Http 假响应，覆盖服务层与适配器核心逻辑，共 **49 个用例 / 152 个断言** 全部通过。执行命令：`php artisan test app/Apps/NiurenSmssend/Tests`。
+应用测试位于 `app/Apps/NiurenSmssend/Tests/`，使用 SQLite 内存库并假配置 / Http 假响应，覆盖服务层与适配器核心逻辑，共 **64 个用例 / 180 个断言** 全部通过。执行命令：`php artisan test app/Apps/NiurenSmssend/Tests`。
 
 | # | 测试文件 | 用例数 | 覆盖内容 | 实现位置 |
 |---|----------|--------|----------|----------|
-| 1 | `TemplateServiceTest` | 10 | 模板分页 / 创建 / 更新 / 删除、CODE 唯一、变量一致性、选项校验、字段搭建 | `Tests/Feature/TemplateServiceTest.php` |
-| 2 | `SendServiceTest` | 14 | 发送成功 / 失败落记录、手机号校验、模板停用、必填校验、变量拼接与内容渲染、失败原因截断与接口信息落库 | `Tests/Feature/SendServiceTest.php` |
+| 1 | `TemplateServiceTest` | 17 | 模板分页 / 创建 / 更新 / 删除、CODE 唯一、变量一致性、选项校验、字段搭建、模板标识唯一与格式校验 | `Tests/Feature/TemplateServiceTest.php` |
+| 2 | `SendServiceTest` | 20 | 发送成功 / 失败落记录、手机号校验、模板停用、必填校验、变量拼接与内容渲染、失败原因截断与接口信息落库、按模板标识发送与调用方标识落库 | `Tests/Feature/SendServiceTest.php` |
 | 3 | `ProviderTest` | 15 | 工厂映射、阿里云 / 腾讯云签名与结果判定、错误码映射、火山引擎预留、请求异常不泄露签名地址 | `Tests/Feature/ProviderTest.php` |
-| 4 | `RecordServiceTest` | 6 | 记录分页与多条件筛选、详情读取与异常 | `Tests/Feature/RecordServiceTest.php` |
+| 4 | `RecordServiceTest` | 8 | 记录分页与多条件筛选（含调用方标识搜索）、详情读取与异常 | `Tests/Feature/RecordServiceTest.php` |
 | 5 | `SslVerifyOptionsTest` | 4 | SSL 验证选项三分支：未配置沿用默认、关闭验证、应用级 CA 路径存在 / 失效回退 | `Tests/Feature/SslVerifyOptionsTest.php` |
 | 6 | 测试支撑 | — | 统一 setup trait：迁移、配置注入、造数辅助方法 | `Tests/Support/NiurenSmssendSetup.php` |
 
