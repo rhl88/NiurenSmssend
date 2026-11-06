@@ -247,7 +247,7 @@ class SendServiceTest extends TestCase
         Http::fake(function () {
             throw new ConnectionException(
                 'cURL error 28: Resolving timed out after 5009 milliseconds (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) '
-                . 'for https://dysmsapi.aliyuncs.com/?AccessKeyId=LTAI5t92yyvJrA9RFb76vTse&Action=SendSms&Signature=mkldIE4RtNf3T5NV1cj7weDE8UE%3D'
+                . 'for https://dysmsapi.aliyuncs.com/?AccessKeyId=TEST_ACCESS_KEY_ID&Action=SendSms&Signature=TEST_SIGNATURE'
             );
         });
 
