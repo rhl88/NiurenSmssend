@@ -23,7 +23,6 @@
         .provider-badge { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 10px; margin-left: 8px; }
         .provider-badge.on { background: #e8f5e9; color: #2e9d4e; }
         .provider-badge.off { background: #f2f2f2; color: #999; }
-        .provider-badge.reserve { background: #fff7e6; color: #d48806; }
     </style>
     @include('admin.partials.permission-script')
 </head>
@@ -40,7 +39,7 @@
                         <select name="current_provider" lay-filter="currentProvider">
                             <option value="aliyun">阿里云</option>
                             <option value="tencent">腾讯云</option>
-                            <option value="volcano">火山引擎（预留）</option>
+                            <option value="volcano">火山引擎</option>
                         </select>
                         <div class="helper-tip">新建短信模板与发送页默认使用该服务商；实际发送时以「模板自身所属服务商」的配置调用接口。</div>
                     </div>
@@ -133,7 +132,7 @@
 
         {{-- 火山引擎 --}}
         <div class="layui-card" data-provider-card="volcano">
-            <div class="layui-card-header">火山引擎短信配置 <span class="provider-badge reserve">预留能力</span></div>
+            <div class="layui-card-header">火山引擎短信配置 <span class="provider-badge" id="badgeVolcano"></span></div>
             <div class="layui-card-body">
                 <div class="layui-form-item">
                     <label class="layui-form-label">AccessKey</label>
@@ -157,7 +156,8 @@
                 <div class="layui-form-item">
                     <label class="layui-form-label">短信服务账号</label>
                     <div class="layui-input-block">
-                        <input type="text" name="volcano_sms_account" class="layui-input" autocomplete="off" placeholder="短信服务 SmsAccount（子账号标识）">
+                        <input type="text" name="volcano_sms_account" class="layui-input" autocomplete="off" placeholder="火山引擎短信消息组 ID（SmsAccount）">
+                        <div class="helper-tip">火山引擎短信控制台的消息组 ID，即接口参数 SmsAccount，用于标识短信发送账号。</div>
                     </div>
                 </div>
                 <div class="layui-form-item">
@@ -170,7 +170,7 @@
                     <label class="layui-form-label">接口地址 Endpoint</label>
                     <div class="layui-input-block">
                         <input type="text" name="volcano_endpoint" class="layui-input" autocomplete="off" placeholder="默认 sms.volcengineapi.com">
-                        <div class="helper-tip">火山引擎短信接入为预留能力，当前版本暂未开放发送，请先使用阿里云或腾讯云。</div>
+                        <div class="helper-tip">火山引擎短信 API 地址，一般无需修改。</div>
                     </div>
                 </div>
             </div>
@@ -244,7 +244,7 @@ layui.use(['jquery', 'form', 'layer'], function () {
 
     // 各卡片"当前启用"徽标
     function refreshBadges(current) {
-        var map = { aliyun: '#badgeAliyun', tencent: '#badgeTencent' };
+        var map = { aliyun: '#badgeAliyun', tencent: '#badgeTencent', volcano: '#badgeVolcano' };
         $.each(map, function (code, sel) {
             var $badge = $(sel);
             if (code === current) {

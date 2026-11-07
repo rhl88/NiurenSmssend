@@ -200,7 +200,7 @@
                     "title": "短信服务账号",
                     "type": "text",
                     "value": "",
-                    "tips": "火山引擎短信服务的 SmsAccount（子账号标识），发送接口必填。"
+                    "tips": "火山引擎短信控制台的消息组 ID（接口参数 SmsAccount），发送接口必填。"
                 },
                 {
                     "name": "volcano_region",
@@ -214,7 +214,7 @@
                     "title": "接口地址 Endpoint",
                     "type": "text",
                     "value": "sms.volcengineapi.com",
-                    "tips": "短信接口地址，默认 sms.volcengineapi.com。火山引擎接入为预留能力。"
+                    "tips": "短信接口地址，默认 sms.volcengineapi.com。"
                 }
             ]
         }

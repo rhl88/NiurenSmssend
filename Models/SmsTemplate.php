@@ -29,7 +29,7 @@ class SmsTemplate extends BaseModel
     public const PROVIDER_TENCENT = 'tencent';
 
     /**
-     * 服务商：火山引擎（预留）
+     * 服务商：火山引擎
      */
     public const PROVIDER_VOLCANO = 'volcano';
 

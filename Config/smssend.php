@@ -33,7 +33,7 @@ return [
     'tencent_region' => 'ap-guangzhou',
     'tencent_endpoint' => 'sms.tencentcloudapi.com',
 
-    // ── 火山引擎短信配置（预留）──
+    // ── 火山引擎短信配置 ──
     'volcano_access_key' => '',
     'volcano_secret_key' => '',
     'volcano_sign_name' => '',

@@ -71,7 +71,7 @@
 
 ## 四、服务商适配（外部集成）
 
-以接口 `SmsProviderInterface` 统一三家服务商调用契约，`ProviderFactory` 按标识实例化适配器；阿里云、腾讯云为完整实现，火山引擎为预留（恒抛提示，不做实际发送）。
+以接口 `SmsProviderInterface` 统一三家服务商调用契约，`ProviderFactory` 按标识实例化适配器；阿里云、腾讯云、火山引擎均为完整实现。
 
 | # | 特性 | 说明 | 实现位置 |
 |---|------|------|----------|
@@ -82,7 +82,7 @@
 | 5 | 阿里云结果判定 | `Code === 'OK'` 视为成功，成功回执取 `BizId`，`RequestId` 作为业务 ID | `Providers/AliyunProvider.php` |
 | 6 | 腾讯云适配 | TC3-HMAC-SHA256 签名，POST JSON，接口版本 `2021-01-11`，Action `SendSms` | `Providers/TencentProvider.php` |
 | 7 | 腾讯云结果判定 | `SendStatusSet[0].Code === 'Ok'` 视为成功，回执取 `SerialNo`；11 位手机号自动补 `+86` | `Providers/TencentProvider.php` |
-| 8 | 火山引擎预留 | 未配置时提示补全配置，已配置时恒抛「预留能力，暂未开放发送」 | `Providers/VolcanoProvider.php` |
+| 8 | 火山引擎适配 | V4 签名（HMAC-SHA256），POST JSON，接口版本 `2020-01-01`，Action `SendSms`，模板参数经 `TemplateParam` 传 JSON 字符串 | `Providers/VolcanoProvider.php` |
 | 9 | 错误码友好化 | 各家适配器内置错误码 → 中文提示映射 | `Providers/*Provider.php` |
 | 10 | 统一异常 | `SmsException` 承载发送侧异常，供服务层与控制器统一捕获 | `Exceptions/SmsException.php` |
 
@@ -142,7 +142,7 @@
 |---|----------|--------|----------|----------|
 | 1 | `TemplateServiceTest` | 17 | 模板分页 / 创建 / 更新 / 删除、CODE 唯一、变量一致性、选项校验、字段搭建、模板标识唯一与格式校验 | `Tests/Feature/TemplateServiceTest.php` |
 | 2 | `SendServiceTest` | 20 | 发送成功 / 失败落记录、手机号校验、模板停用、必填校验、变量拼接与内容渲染、失败原因截断与接口信息落库、按模板标识发送与调用方标识落库 | `Tests/Feature/SendServiceTest.php` |
-| 3 | `ProviderTest` | 15 | 工厂映射、阿里云 / 腾讯云签名与结果判定、错误码映射、火山引擎预留、请求异常不泄露签名地址 | `Tests/Feature/ProviderTest.php` |
+| 3 | `ProviderTest` | 21 | 工厂映射、三家服务商签名与结果判定、错误码映射、请求体断言、请求异常不泄露请求地址 | `Tests/Feature/ProviderTest.php` |
 | 4 | `RecordServiceTest` | 8 | 记录分页与多条件筛选（含调用方标识搜索）、详情读取与异常 | `Tests/Feature/RecordServiceTest.php` |
 | 5 | `SslVerifyOptionsTest` | 4 | SSL 验证选项三分支：未配置沿用默认、关闭验证、应用级 CA 路径存在 / 失效回退 | `Tests/Feature/SslVerifyOptionsTest.php` |
 | 6 | 测试支撑 | — | 统一 setup trait：迁移、配置注入、造数辅助方法 | `Tests/Support/NiurenSmssendSetup.php` |

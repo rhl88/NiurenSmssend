@@ -167,15 +167,147 @@ class ProviderTest extends TestCase
         $provider->send('13800138000', '测试签名', '1234567', []);
     }
 
-    public function test_火山引擎已配置但发送能力为预留(): void
+    public function test_火山引擎发送成功返回消息ID(): void
     {
-        $provider = new VolcanoProvider();
-        $this->assertTrue($provider->isConfigured());
+        Http::fake([
+            'sms.volcengineapi.com*' => Http::response([
+                'ResponseMetadata' => [
+                    'RequestId' => 'req_volcano_1',
+                    'Action' => 'SendSms',
+                    'Version' => '2020-01-01',
+                    'Service' => 'volcSMS',
+                    'Region' => 'cn-north-1',
+                ],
+                'Result' => ['MessageID' => ['msg_volcano_1']],
+            ]),
+        ]);
+
+        $result = (new VolcanoProvider())->send('13800138000', '测试签名', 'ST_1234', ['code' => '1234']);
+
+        $this->assertSame('msg_volcano_1', $result['vendor_msg_id']);
+        $this->assertSame('req_volcano_1', $result['biz_id']);
+    }
+
+    public function test_火山引擎请求体携带签名与模板参数(): void
+    {
+        Http::fake([
+            'sms.volcengineapi.com*' => Http::response([
+                'ResponseMetadata' => ['RequestId' => 'req_volcano_2'],
+                'Result' => ['MessageID' => ['msg_volcano_2']],
+            ]),
+        ]);
+
+        (new VolcanoProvider())->send('13800138000', '测试签名', 'ST_1234', ['code' => '1234']);
+
+        Http::assertSent(function ($request) {
+            $body = json_decode($request->body(), true);
+            $authorization = $request->hasHeader('Authorization') ? $request->header('Authorization')[0] : '';
+
+            return str_contains($request->url(), 'Action=SendSms')
+                && str_contains($request->url(), 'Version=2020-01-01')
+                && $body['SmsAccount'] === 'test_volcano_account'
+                && $body['Sign'] === '测试签名'
+                && $body['TemplateID'] === 'ST_1234'
+                && $body['PhoneNumbers'] === '13800138000'
+                && $body['TemplateParam'] === '{"code":"1234"}'
+                && str_starts_with($authorization, 'HMAC-SHA256 Credential=test_volcano_access_key/')
+                && str_contains($authorization, '/cn-north-1/volcSMS/request')
+                && str_contains($authorization, 'SignedHeaders=host;x-date')
+                && $request->hasHeader('X-Date');
+        });
+    }
+
+    public function test_火山引擎固定模板省略模板参数(): void
+    {
+        Http::fake([
+            'sms.volcengineapi.com*' => Http::response([
+                'ResponseMetadata' => ['RequestId' => 'req_volcano_3'],
+                'Result' => ['MessageID' => ['msg_volcano_3']],
+            ]),
+        ]);
+
+        (new VolcanoProvider())->send('13800138000', '测试签名', 'ST_1234', []);
+
+        Http::assertSent(function ($request) {
+            $body = json_decode($request->body(), true);
+
+            return ! array_key_exists('TemplateParam', $body);
+        });
+    }
+
+    public function test_火山引擎错误码映射为中文提示(): void
+    {
+        Http::fake([
+            'sms.volcengineapi.com*' => Http::response([
+                'ResponseMetadata' => [
+                    'RequestId' => 'req_volcano_err',
+                    'Error' => ['Code' => 'RE:0010', 'Message' => 'account arrear'],
+                ],
+            ]),
+        ]);
 
         $this->expectException(SmsException::class);
-        $this->expectExceptionMessage('预留能力');
+        $this->expectExceptionMessage('火山引擎账号欠费，请及时充值');
 
-        $provider->send('13800138000', '测试签名', '1234567', []);
+        (new VolcanoProvider())->send('13800138000', '测试签名', 'ST_1234', ['code' => '1234']);
+    }
+
+    public function test_火山引擎未知错误码透出服务端信息(): void
+    {
+        Http::fake([
+            'sms.volcengineapi.com*' => Http::response([
+                'ResponseMetadata' => [
+                    'RequestId' => 'req_volcano_unknown',
+                    'Error' => ['Code' => 'RE:9999', 'Message' => 'boom'],
+                ],
+            ]),
+        ]);
+
+        try {
+            (new VolcanoProvider())->send('13800138000', '测试签名', 'ST_1234', ['code' => '1234']);
+            $this->fail('应当抛出 SmsException');
+        } catch (SmsException $e) {
+            $this->assertSame('火山引擎短信发送失败：RE:9999 boom', $e->getMessage());
+        }
+    }
+
+    public function test_火山引擎发送成功返回接口信息(): void
+    {
+        Http::fake([
+            'sms.volcengineapi.com*' => Http::response([
+                'ResponseMetadata' => ['RequestId' => 'req_volcano_4'],
+                'Result' => ['MessageID' => ['msg_volcano_4']],
+            ]),
+        ]);
+
+        $result = (new VolcanoProvider())->send('13800138000', '测试签名', 'ST_1234', ['code' => '1234']);
+
+        $info = $result['request_info'] ?? [];
+        $this->assertSame('https://sms.volcengineapi.com/?Action=SendSms&Version=2020-01-01', $info['url'] ?? '');
+        $this->assertSame('POST', $info['method'] ?? '');
+        $this->assertSame('test_volcano_account', $info['params']['SmsAccount'] ?? '');
+        $this->assertSame('ST_1234', $info['params']['TemplateID'] ?? '');
+        // 鉴权信息在请求头，接口信息不应包含
+        $this->assertArrayNotHasKey('Authorization', $info['params'] ?? []);
+    }
+
+    public function test_火山引擎请求异常时提示不含请求地址(): void
+    {
+        Http::fake(function () {
+            throw new ConnectionException('cURL error 6: Could not resolve host: sms.volcengineapi.com');
+        });
+
+        try {
+            (new VolcanoProvider())->send('13800138000', '测试签名', 'ST_1234', ['code' => '1234']);
+            $this->fail('应当抛出 SmsException');
+        } catch (SmsException $e) {
+            $message = $e->getMessage();
+
+            $this->assertStringContainsString('请求火山引擎短信服务失败', $message);
+            $this->assertStringContainsString('网络连接异常', $message);
+            $this->assertStringContainsString('cURL error 6', $message);
+            $this->assertStringNotContainsString('sms.volcengineapi.com', $message);
+        }
     }
 
     public function test_阿里云请求异常时提示不含请求地址与敏感参数(): void

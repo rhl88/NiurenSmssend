@@ -18,7 +18,7 @@ use Tests\TestCase;
  * - 多选控件以顿号连接
  * - 必填缺失 / 手机号非法 / 模板停用的边界校验（不落库或落 failed）
  * - 服务商返回错误映射中文提示并记录 failed
- * - 火山引擎预留能力拒绝发送
+ * - 火山引擎错误码映射中文提示并记录 failed
  */
 class SendServiceTest extends TestCase
 {
@@ -197,8 +197,17 @@ class SendServiceTest extends TestCase
         ]);
     }
 
-    public function test_火山引擎预留能力拒绝发送并记录失败(): void
+    public function test_火山引擎错误码失败时映射中文提示并记录失败(): void
     {
+        Http::fake([
+            'sms.volcengineapi.com*' => Http::response([
+                'ResponseMetadata' => [
+                    'RequestId' => 'req_volcano_fail',
+                    'Error' => ['Code' => 'RE:0004', 'Message' => 'signature error'],
+                ],
+            ]),
+        ]);
+
         $template = $this->createTemplate([
             'provider' => 'volcano',
             'content' => '尊敬的${name}',
@@ -211,12 +220,13 @@ class SendServiceTest extends TestCase
             $this->service()->send($template->id, '13800138000', [$field->id => '张三']);
             $this->fail('应当抛出 SmsException');
         } catch (SmsException $e) {
-            $this->assertStringContainsString('预留能力', $e->getMessage());
+            $this->assertSame('短信签名不正确或未审核通过，请核对签名内容', $e->getMessage());
         }
 
         $this->assertDatabaseHas('app_niuren_smssend_records', [
             'provider' => 'volcano',
             'send_status' => 'failed',
+            'error_message' => '短信签名不正确或未审核通过，请核对签名内容',
         ]);
     }
 
