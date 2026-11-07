@@ -54,6 +54,18 @@
                         </div>
                     </div>
                     <div class="layui-inline">
+                        <label class="layui-form-label">调用来源</label>
+                        <div class="layui-input-inline" style="width:150px;">
+                            <select name="caller_app">
+                                <option value="">全部</option>
+                                <option value="{{ $backendCallerFilter }}">后台手动发送</option>
+                                @foreach($callerApps as $app)
+                                <option value="{{ $app }}">{{ $app }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
                         <label class="layui-form-label">关键字</label>
                         <div class="layui-input-inline">
                             <input type="text" name="keyword" placeholder="手机号 / 模板名称 / 模板 CODE / 调用来源" class="layui-input" autocomplete="off">
@@ -176,6 +188,7 @@ layui.use(['jquery', 'table', 'form', 'layer', 'laydate'], function () {
             where: {
                 provider: data.field.provider,
                 status: data.field.status,
+                caller_app: data.field.caller_app,
                 keyword: data.field.keyword,
                 date_from: $('#dateFrom').val(),
                 date_to: $('#dateTo').val()

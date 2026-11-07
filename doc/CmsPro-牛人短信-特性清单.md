@@ -107,7 +107,7 @@
 | 13 | 变量值拼接 | 同一变量多控件按 `sort` 顺序无分隔符拼接；多选控件值以「、」连接 | `Services/SendService.php` |
 | 14 | 内容渲染 | 以变量值 `str_replace` 替换模板中的 `${变量名}`，生成最终短信内容 | `Services/SendService.php` |
 | 15 | 模板应用级标识 | 模板支持设置选填的应用级标识（alias，全局唯一、2–100 位，字母/数字开头），其他应用可按标识调用发送服务，不依赖自增 ID；留空仅可按 ID 调用 | `Services/TemplateService.php` |
-| 16 | 调用方记录 | 发送记录落库调用方应用标识（`caller_app`，空为后台手动发送），列表「调用来源」列、详情行展示并支持关键字搜索，便于排查外部调用问题 | `Services/SendService.php`、`Views/Admin/records.blade.php` |
+| 16 | 调用方记录 | 发送记录落库调用方应用标识（`caller_app`，空为后台手动发送），列表「调用来源」列、详情行展示，支持「调用来源」下拉筛选（含「后台手动发送」选项，选项从记录动态提取）与关键字搜索，便于排查外部调用问题 | `Services/SendService.php`、`Services/RecordService.php`、`Views/Admin/records.blade.php` |
 
 ---
 

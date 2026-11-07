@@ -17,12 +17,13 @@ class RecordService
     /**
      * 分页查询发送记录
      *
-     * @param string|null $provider 服务商筛选
-     * @param string|null $status   发送状态筛选（pending/success/failed）
-     * @param string|null $keyword  关键字（手机号 / 模板名称 / 模板 CODE）
-     * @param string|null $dateFrom 起始日期（Y-m-d，含当日 00:00:00）
-     * @param string|null $dateTo   结束日期（Y-m-d，含当日 23:59:59）
-     * @param int         $pageSize 每页条数
+     * @param string|null $provider  服务商筛选
+     * @param string|null $status    发送状态筛选（pending/success/failed）
+     * @param string|null $keyword   关键字（手机号 / 模板名称 / 模板 CODE / 调用来源）
+     * @param string|null $dateFrom  起始日期（Y-m-d，含当日 00:00:00）
+     * @param string|null $dateTo    结束日期（Y-m-d，含当日 23:59:59）
+     * @param string|null $callerApp 调用来源筛选；传 SmsRecord::CALLER_BACKEND_FILTER 筛后台手动发送的记录
+     * @param int         $pageSize  每页条数
      */
     public function paginate(
         ?string $provider = null,
@@ -30,11 +31,13 @@ class RecordService
         ?string $keyword = null,
         ?string $dateFrom = null,
         ?string $dateTo = null,
+        ?string $callerApp = null,
         int $pageSize = 15
     ): LengthAwarePaginator {
         $query = SmsRecord::query()
             ->ofProvider($provider)
             ->ofStatus($status)
+            ->ofCallerApp($callerApp)
             ->keyword($keyword);
 
         $dateFrom = trim((string) $dateFrom);
@@ -48,6 +51,21 @@ class RecordService
         }
 
         return $query->orderBy('id', 'desc')->paginate($pageSize);
+    }
+
+    /**
+     * 提取调用来源筛选项（出现过且非空的调用方应用标识，去重升序）
+     *
+     * @return array<int,string>
+     */
+    public function callerAppOptions(): array
+    {
+        return SmsRecord::query()
+            ->where('caller_app', '!=', '')
+            ->distinct()
+            ->orderBy('caller_app')
+            ->pluck('caller_app')
+            ->all();
     }
 
     /**

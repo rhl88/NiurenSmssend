@@ -30,6 +30,11 @@ class SmsRecord extends BaseModel
     public const STATUS_FAILED = 'failed';
 
     /**
+     * 调用来源筛选保留值：仅看后台手动发送（caller_app 为空串）的记录
+     */
+    public const CALLER_BACKEND_FILTER = '__backend__';
+
+    /**
      * 数据表名（应用前缀 app_niuren_smssend_）
      */
     protected $table = 'app_niuren_smssend_records';
@@ -111,6 +116,25 @@ class SmsRecord extends BaseModel
         }
 
         return $query->where('provider', $provider);
+    }
+
+    /**
+     * 作用域：按调用来源筛选
+     *
+     * @param string|null $callerApp 调用方应用标识；传保留值 __backend__ 时筛后台手动发送（空串）的记录；空则不筛
+     */
+    public function scopeOfCallerApp(Builder $query, ?string $callerApp): Builder
+    {
+        $callerApp = trim((string) $callerApp);
+        if ($callerApp === '') {
+            return $query;
+        }
+
+        if ($callerApp === self::CALLER_BACKEND_FILTER) {
+            return $query->where('caller_app', '');
+        }
+
+        return $query->where('caller_app', $callerApp);
     }
 
     /**

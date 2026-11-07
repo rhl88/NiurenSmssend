@@ -43,6 +43,8 @@ class RecordController extends BaseAdminController
         return view('niuren.smssend::Admin.records', [
             'providers' => SmsTemplate::providerMap(),
             'statusMap' => SmsRecord::statusMap(),
+            'callerApps' => $this->service->callerAppOptions(),
+            'backendCallerFilter' => SmsRecord::CALLER_BACKEND_FILTER,
         ]);
     }
 
@@ -67,6 +69,7 @@ class RecordController extends BaseAdminController
             $request->input('keyword'),
             $request->input('date_from'),
             $request->input('date_to'),
+            $request->input('caller_app'),
             $pageSize
         );
 

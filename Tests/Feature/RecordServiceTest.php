@@ -3,6 +3,7 @@
 namespace App\Apps\NiurenSmssend\Tests\Feature;
 
 use App\Apps\NiurenSmssend\Exceptions\SmsException;
+use App\Apps\NiurenSmssend\Models\SmsRecord;
 use App\Apps\NiurenSmssend\Services\RecordService;
 use App\Apps\NiurenSmssend\Tests\Support\NiurenSmssendSetup;
 use Tests\TestCase;
@@ -77,6 +78,34 @@ class RecordServiceTest extends TestCase
         $result = $this->service()->paginate(null, null, 'niuren', null, null);
 
         $this->assertSame(0, $result->total());
+    }
+
+    public function test_按调用来源筛选记录(): void
+    {
+        $this->createRecord(['mobile' => '13800138000', 'caller_app' => 'niuren.form']);
+        $this->createRecord(['mobile' => '13900139000', 'caller_app' => '']);
+        $this->createRecord(['mobile' => '13700137000', 'caller_app' => 'niuren.checkin']);
+
+        $byApp = $this->service()->paginate(null, null, null, null, null, 'niuren.form');
+        $this->assertSame(1, $byApp->total());
+        $this->assertSame('niuren.form', $byApp->items()[0]->caller_app);
+
+        $byBackend = $this->service()->paginate(null, null, null, null, null, SmsRecord::CALLER_BACKEND_FILTER);
+        $this->assertSame(1, $byBackend->total());
+        $this->assertSame('', $byBackend->items()[0]->caller_app);
+
+        // 空值不附加筛选条件
+        $this->assertSame(3, $this->service()->paginate(null, null, null, null, null, '')->total());
+    }
+
+    public function test_调用来源筛选项去重升序提取(): void
+    {
+        $this->createRecord(['mobile' => '13800138000', 'caller_app' => 'niuren.form']);
+        $this->createRecord(['mobile' => '13900139000', 'caller_app' => 'niuren.form']);
+        $this->createRecord(['mobile' => '13700137000', 'caller_app' => 'niuren.checkin']);
+        $this->createRecord(['mobile' => '13600136000', 'caller_app' => '']);
+
+        $this->assertSame(['niuren.checkin', 'niuren.form'], $this->service()->callerAppOptions());
     }
 
     public function test_按日期范围筛选记录(): void
